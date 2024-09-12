@@ -16,7 +16,9 @@ def main():
         "-ref", "--reference", type=str, required=True, help="Reference sequence ID as given in alignment file."
     )
 
-    parser.add_argument("-s", "--stop", type=int, required=False, help="Stop at position X of the reference sequence.")
+    parser.add_argument(
+        "-s", "--stop", type=int, required=False, help="Stop at position X of the reference sequence."
+    )
 
     parser.add_argument(
         "--strict",
@@ -42,6 +44,7 @@ def main():
         alignment = AlignIO.read(sys.stdin, "fasta")
 
     og_alignment = copy(alignment) #needed for find_reference alignment if ignored individual is also ref
+    
     # Filtering
     if args.ignore:
         filtered_records = [
@@ -71,8 +74,10 @@ def main():
         pos for pos, counts in position_counts.items() if len(counts) > 1
     ]
 
-    # Function to determine if a position is diagnostic
     def is_diagnostic(pos):
+        '''
+        Determines if a sequence is diagnostic.
+        '''
         nucleotide_groups = defaultdict(list)
         for record in alignment:
             nucleotide_groups[record.seq[pos]].append(record.id)
@@ -85,13 +90,13 @@ def main():
     # Find diagnostic positions
     if args.strict:
         diagnostic_positions = [pos for pos in variable_positions if is_diagnostic(pos)]
-    else: # all SNPS are considered diagnostic SNPs
+    else: # all SNPS are considered diagnostic positions
         diagnostic_positions = variable_positions
 
     diagnostic_positions.sort()
 
     def find_reference_alignment(ref_name: str, alignment) -> str:
-        """Extracts the named reference from the MSA."""
+        """Extracts the reference sequence from the MSA. This sequence is needed for aln_to_ref."""
 
         # for record in alignment:
         for record in alignment:#SeqIO.parse(alignment, "fasta"):
@@ -110,6 +115,9 @@ def main():
     aligned_ref = find_reference_alignment(args.reference, og_alignment)
 
     def aln_to_ref(aligned_ref):
+        '''
+        Translates from positions in the alignment to positions in the reference sequence.
+        '''
         aln_to_ref = {}
         index = 0
         for i, nuc in enumerate(aligned_ref):
